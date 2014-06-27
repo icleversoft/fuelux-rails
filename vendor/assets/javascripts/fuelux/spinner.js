@@ -18,6 +18,7 @@
 		this.options = $.extend({}, $.fn.spinner.defaults, options);
 		this.$input = this.$element.find('.spinner-input');
 		this.$element.on('keyup', this.$input, $.proxy(this.change, this));
+		this.$element.on('keydown', this.$input, $.proxy(this.keydown, this));
 
 		if (this.options.hold) {
 			this.$element.on('mousedown', '.spinner-up', $.proxy(function() { this.startSpin(true); } , this));
@@ -28,6 +29,8 @@
 			this.$element.on('click', '.spinner-up', $.proxy(function() { this.step(true); } , this));
 			this.$element.on('click', '.spinner-down', $.proxy(function() { this.step(false); }, this));
 		}
+
+		this.$element.find('.spinner-up, .spinner-down').attr('tabIndex', -1);
 
 		this.switches = {
 			count: 1,
@@ -130,9 +133,16 @@
 		step: function (dir) {
 			var curValue = this.options.value;
 			var limValue = dir ? this.options.max : this.options.min;
+			var digits, multiple;
 
 			if ((dir ? curValue < limValue : curValue > limValue)) {
 				var newVal = curValue + (dir ? 1 : -1) * this.options.step;
+
+				if(this.options.step % 1 !== 0){
+					digits = (this.options.step + '').split('.')[1].length;
+					multiple = Math.pow(10, digits);
+					newVal = Math.round(newVal * multiple) / multiple;
+				}
 
 				if (dir ? newVal > limValue : newVal < limValue) {
 					this.value(limValue);
@@ -166,6 +176,16 @@
 			this.options.disabled = false;
 			this.$input.removeAttr("disabled");
 			this.$element.find('button').removeClass('disabled');
+		},
+
+		keydown: function(event) {
+			var keyCode = event.keyCode;
+
+			if(keyCode===38){
+				this.step(true);
+			}else if(keyCode===40){
+				this.step(false);
+			}
 		}
 	};
 

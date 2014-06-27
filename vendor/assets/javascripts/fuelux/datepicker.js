@@ -12,6 +12,24 @@
 	var old    = $.fn.datepicker;
 	var moment = false;
 
+	// only load moment if it's there. otherwise we'll look for it in window.moment
+	// you need to make sure moment is loaded before the rest of this module
+
+		moment = amdMoment;
+	}, function( err ) {
+		var failedId = err.requireModules && err.requireModules[0];
+		if (failedId === 'moment') {
+			// do nothing cause that's the point of progressive enhancement
+			if( typeof window.console !== 'undefined' ) {
+				if( window.navigator.userAgent.search( 'PhantomJS' ) < 0 ) {
+					// don't show this in phantomjs tests
+					window.console.log( "Don't worry if you're seeing a 404 that's looking for moment.js. The Fuel UX Datepicker is trying to use moment.js to give you extra features." );
+					window.console.log( "Checkout the Fuel UX docs (http://exacttarget.github.io/fuelux/#datepicker) to see how to integrate moment.js for more features" );
+				}
+			}
+		}
+	});
+
 	// DATEPICKER CONSTRUCTOR AND PROTOTYPE
 
 	var Datepicker = function (element, options) {
@@ -197,13 +215,13 @@
 				silent = silent || false;
 				// if silent is requested (direct user input parsing) return true or false not a date object, otherwise return a date object
 				if( silent ) {
-					if( moment( date )._d.toString() === "Invalid Date" ) {
+					if( moment( date ).toDate().toString() === "Invalid Date" ) {
 						return false;
 					} else {
 						return true;
 					}
 				} else {
-					return moment( date )._d; //example of using moment for parsing
+					return moment( date ).toDate(); //example of using moment for parsing
 				}
 			} else {
 				// if moment isn't present, use previous date parsing strategry
@@ -398,7 +416,8 @@
 				var tmpLastMonthDaysObj        = {};
 				tmpLastMonthDaysObj.number     = this.daysOfLastMonth[ x ];
 				tmpLastMonthDaysObj[ 'class' ] = '';
-				tmpLastMonthDaysObj[ 'class' ] = this._processDateRestriction( new Date( viewedYear, viewedMonth + 1, this.daysOfLastMonth[ x ], 0, 0, 0, 0 ), true );
+				tmpLastMonthDaysObj[ 'class' ] = this._processDateRestriction( new Date( viewedYear, viewedMonth - 1, this.daysOfLastMonth[ x ], 0, 0, 0, 0 ), true );
+				tmpLastMonthDaysObj[ 'class' ] += ' past';
 				this.daysOfLastMonth[ x ]      = tmpLastMonthDaysObj;
 			}
 
@@ -557,7 +576,6 @@
 			this.stagedDate.setDate( parseInt( e.target.innerHTML, 10 ) );
 
 			this.setDate( this.stagedDate );
-			this._render();
 			this.done = true;
 		},
 
@@ -595,7 +613,7 @@
 			if( e.target.className.indexOf( 'restrict' ) > -1 ) {
 				return this._killEvent(e);
 			}
-			
+
 			if( this.options.showDays) {
 				this.viewDate = new Date( this.viewDate.getFullYear(), this.viewDate.getMonth() - 1, 1 );
 			} else if( this.options.showMonths ) {
@@ -621,7 +639,7 @@
 			if( e.target.className.indexOf('restrict') > -1 ) {
 				return this._killEvent(e);
 			}
-			
+
 			if( this.options.showDays ) {
 				this.viewDate = new Date( this.viewDate.getFullYear(), this.viewDate.getMonth() + 1, 1 );
 			} else if( this.options.showMonths ) {
@@ -777,7 +795,7 @@
 			var dropdownHtml = '<div class="' + inputClass + '">' +
 						'<div class="dropdown-menu"></div>' +
 						'<input type="text" '+ this._calculateInputSize() +' value="'+this.formatDate( this.date ) +'" data-toggle="dropdown">';
-			
+
 			if( Boolean( this.options.createInput.dropDownBtn ) ) {
 				dropdownHtml = dropdownHtml + '<button type="button" class="btn" data-toggle="dropdown"><i class="icon-calendar"></i></button>';
 			}
@@ -829,7 +847,7 @@
 			}
 
 			if( !!triggerError ) {
-				// we will insert the staged date into the input 
+				// we will insert the staged date into the input
 				this._setNullDate( true );
 				this.$element.trigger( 'inputParsingFailed' );
 			}
